@@ -1,35 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
+<?php
+session_start();
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <title>Your Website</title>
-</head>
+require_once 'controllers/DB_Connection.php';
+require_once 'model/QuestionModel.php';
 
-<body class="bg-gray-200 flex items-center justify-center h-screen">
+try {
+    $db = new DB_Connection();
+    $questionModel = new QuestionModel($db);
 
-    <div class="bg-white p-8 rounded shadow-md max-w-md w-full">
+    // Initialize or retrieve shown question IDs from the session
+    $shownQuestionIds = isset($_SESSION['shown_question_ids']) ? $_SESSION['shown_question_ids'] : [];
 
-        <h1 class="text-2xl font-extrabold mb-4 text-center text-indigo-600">Enter Your Pseudo</h1>
+    // Fetch a random question excluding shown questions
+    $randomQuestion = $questionModel->getRandomQuestionWithChoicesAndTheme($shownQuestionIds);
 
-        <form>
-            <div class="mb-4">
-                <label for="pseudo" class="block text-gray-600 text-sm font-medium mb-2">Pseudo</label>
-                <input type="text" id="pseudo" name="pseudo"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:border-blue-300"
-                    placeholder="JohnDoe123">
-            </div>
+    if ($randomQuestion) {
+        // Display or use the data as needed
+        print_r($randomQuestion);
 
-            <a href="role.php" type="submit"
-                class="w-full bg-blue-500 text-white px-4 py-3 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300">
-                Continue
-            </a>
-        </form>
+        // Add the question ID to the shown question IDs
+        $shownQuestionIds[] = $randomQuestion['question_id'];
 
-    </div>
+        // Update the session variable
+        $_SESSION['shown_question_ids'] = $shownQuestionIds;
 
-</body>
+        // Check if all questions have been shown
+        $allQuestionsShown = count($shownQuestionIds) === $questionModel->getQuestionCount();
+        if ($allQuestionsShown) {
+            echo "All questions have been shown.";
 
-</html>
+            // Reset shown question IDs for a new session
+            $_SESSION['shown_question_ids'] = [];
+        }
+    } else {
+        // Handle the case when all questions have been shown
+        echo "All questions have been shown.";
+
+        // Reset shown question IDs for a new session
+        $_SESSION['shown_question_ids'] = [];
+    }
+} catch (Exception $e) {
+    echo "Error: " . $e->getMessage();
+}
+?>
